@@ -1,12 +1,14 @@
 import pygame
 import pytest
 from game.src.main import Player, Enemy
+from game.src.map import Map
 
 @pytest.fixture
 def game_objects():
     pygame.init()
     player = Player()
-    enemy = Enemy(player)
+    game_map = Map("test", [], [(100, 100)])
+    enemy = Enemy(player, game_map)
     return player, enemy
 
 def test_player_loses_health_on_collision(game_objects):

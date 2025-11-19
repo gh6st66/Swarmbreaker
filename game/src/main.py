@@ -1,5 +1,6 @@
 import pygame
 import random
+from game.src.maps.cursed_grove import CursedGroveMap
 
 # --- Constants ---
 SCREEN_WIDTH = 800
@@ -35,7 +36,9 @@ class Player(pygame.sprite.Sprite):
 
         self.last_shot = pygame.time.get_ticks()
 
-    def update(self):
+    def update(self, obstacles):
+        original_pos = self.rect.copy()
+
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT]:
             self.rect.x -= self.speed
@@ -45,6 +48,10 @@ class Player(pygame.sprite.Sprite):
             self.rect.y -= self.speed
         if keys[pygame.K_DOWN]:
             self.rect.y += self.speed
+
+        # Check for collisions with obstacles
+        if pygame.sprite.spritecollide(self, obstacles, False):
+            self.rect = original_pos
 
         self.shoot()
 
@@ -79,7 +86,7 @@ class Bullet(pygame.sprite.Sprite):
         self.rect.center = (x, y)
         self.speed = 10
 
-    def update(self):
+    def update(self, *args, **kwargs):
         self.rect.y -= self.speed
         if self.rect.bottom < 0:
             self.kill()
@@ -93,33 +100,27 @@ class ExperienceOrb(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
 
+    def update(self, *args, **kwargs):
+        pass
+
 # --- Enemy Class ---
 class Enemy(pygame.sprite.Sprite):
-    def __init__(self, player):
+    def __init__(self, player, game_map):
         super().__init__()
         self.image = pygame.Surface([30, 30])
         self.image.fill((255, 0, 0))  # Red
         self.rect = self.image.get_rect()
         self.player = player
+        self.game_map = game_map
 
-        # Spawn at a random location off-screen
-        side = random.randint(1, 4)
-        if side == 1: # Top
-            self.rect.x = random.randint(-50, SCREEN_WIDTH + 50)
-            self.rect.y = random.randint(-50, 0)
-        elif side == 2: # Bottom
-            self.rect.x = random.randint(-50, SCREEN_WIDTH + 50)
-            self.rect.y = random.randint(SCREEN_HEIGHT, SCREEN_HEIGHT + 50)
-        elif side == 3: # Left
-            self.rect.x = random.randint(-50, 0)
-            self.rect.y = random.randint(-50, SCREEN_HEIGHT + 50)
-        else: # Right
-            self.rect.x = random.randint(SCREEN_WIDTH, SCREEN_WIDTH + 50)
-            self.rect.y = random.randint(-50, SCREEN_HEIGHT + 50)
+        # Spawn at a random spawn point from the map
+        self.rect.center = random.choice(self.game_map.spawn_points)
 
         self.speed = 2
 
-    def update(self):
+    def update(self, obstacles):
+        original_pos = self.rect.copy()
+
         # Move towards the player
         dx = self.player.rect.x - self.rect.x
         dy = self.player.rect.y - self.rect.y
@@ -128,11 +129,16 @@ class Enemy(pygame.sprite.Sprite):
             self.rect.x += self.speed * dx / dist
             self.rect.y += self.speed * dy / dist
 
+        if pygame.sprite.spritecollide(self, obstacles, False):
+            self.rect = original_pos
+
 # --- Game Setup ---
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Multiplayer Survivor Game")
 all_sprites = pygame.sprite.Group()
+game_map = CursedGroveMap()
+
 player = Player()
 all_sprites.add(player)
 enemies = pygame.sprite.Group()
@@ -172,7 +178,7 @@ def main():
                 running = False
             if event.type == WAVE_EVENT:
                 for _ in range(wave_number * 2): # Increase enemies each wave
-                    enemy = Enemy(player)
+                    enemy = Enemy(player, game_map)
                     all_sprites.add(enemy)
                     enemies.add(enemy)
                 wave_number += 1
