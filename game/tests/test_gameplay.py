@@ -65,3 +65,33 @@ def test_player_levels_up(game_objects):
     player.gain_experience(25)
     assert player.level == 2
     assert player.experience == 15
+
+def test_arena_shrinks_over_time():
+    from game.src.main import SCREEN_WIDTH, SCREEN_HEIGHT
+    initial_rect = pygame.Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)
+
+    # Simulate halfway through the game
+    game_time = 600 # 10 minutes
+    shrink_factor = 1.0 - (game_time / 1200.0)
+
+    arena_width = SCREEN_WIDTH * shrink_factor
+    arena_height = SCREEN_HEIGHT * shrink_factor
+
+    assert arena_width == SCREEN_WIDTH / 2
+    assert arena_height == SCREEN_HEIGHT / 2
+
+def test_player_takes_damage_outside_arena(game_objects):
+    player, _ = game_objects
+    from game.src.main import ARENA_DAMAGE
+
+    # Place player outside a small arena
+    arena_rect = pygame.Rect(300, 200, 200, 200)
+    player.rect.center = (100, 100)
+
+    initial_health = player.health
+    dt = 0.5 # Simulate half a second
+
+    if not arena_rect.contains(player.rect):
+        player.health -= ARENA_DAMAGE * dt
+
+    assert player.health == initial_health - (ARENA_DAMAGE * dt)

@@ -136,28 +136,26 @@ class Enemy(pygame.sprite.Sprite):
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Multiplayer Survivor Game")
-
 all_sprites = pygame.sprite.Group()
 game_map = CursedGroveMap()
 
 player = Player()
 all_sprites.add(player)
-
 enemies = pygame.sprite.Group()
 bullets = pygame.sprite.Group()
 experience_orbs = pygame.sprite.Group()
-
 clock = pygame.time.Clock()
 game_time = 0
+# Arena
+ARENA_DAMAGE = 5
+arena_rect = pygame.Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)
 
 WAVE_EVENT = pygame.USEREVENT + 1
 pygame.time.set_timer(WAVE_EVENT, 5000) # 5 seconds
-
 wave_number = 1
-
 # --- Game Loop ---
 def main():
-    global wave_number, game_time
+    global wave_number, game_time, arena_rect
     running = True
     last_time = pygame.time.get_ticks()
     while running:
@@ -167,6 +165,13 @@ def main():
         game_time += dt
         if game_time >= 1200: # 20 minutes
             running = False
+        # Arena Shrinking
+        shrink_factor = 1.0 - (game_time / 1200.0)
+        arena_width = SCREEN_WIDTH * shrink_factor
+        arena_height = SCREEN_HEIGHT * shrink_factor
+        arena_rect.width = max(50, arena_width)
+        arena_rect.height = max(50, arena_height)
+        arena_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -179,9 +184,13 @@ def main():
                 wave_number += 1
 
         # --- Update ---
-        all_sprites.update(game_map.obstacle_sprites)
-
+        all_sprites.update()
         # --- Collision Detection ---
+        # Arena Damage
+        if not arena_rect.contains(player.rect):
+            player.health -= ARENA_DAMAGE * dt
+            if player.health <= 0:
+                running = False
         # Player <> Enemies
         hits = pygame.sprite.spritecollide(player, enemies, True)
         for hit in hits:
@@ -203,7 +212,8 @@ def main():
             player.gain_experience(25)
 
         # --- Draw ---
-        game_map.draw(screen)
+        screen.fill((0, 0, 0))  # Black background
+        pygame.draw.rect(screen, (100, 100, 100), arena_rect, 2) # Draw arena border
         all_sprites.draw(screen)
         pygame.display.flip()
 
