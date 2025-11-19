@@ -1,209 +1,138 @@
 import pygame
-import random
+from game.src.constants import SCREEN_WIDTH, SCREEN_HEIGHT
+from game.src.player import Player
+from game.src.enemy import Enemy
+from game.src.experience_orb import ExperienceOrb
+from game.src.ui import draw_ui
+from game.src.game_state import GameState
+from game.src.boss import Boss
 
-# --- Constants ---
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
-PLAYER_SIZE = 50
-PLAYER_COLOR = (0, 128, 255)  # Blue
+def reset_game():
+    all_sprites = pygame.sprite.Group()
+    enemies = pygame.sprite.Group()
+    bullets = pygame.sprite.Group()
+    experience_orbs = pygame.sprite.Group()
 
-# --- Upgrade Definitions ---
-UPGRADES = {
-    "health": lambda p: setattr(p, 'max_health', p.max_health + 25),
-    "speed": lambda p: setattr(p, 'speed', p.speed + 1),
-    "firerate": lambda p: setattr(p, 'shoot_delay', max(50, p.shoot_delay - 25))
-}
+    player = Player(all_sprites, bullets)
+    all_sprites.add(player)
 
-# --- Player Class ---
-class Player(pygame.sprite.Sprite):
-    def __init__(self):
-        super().__init__()
-        self.image = pygame.Surface([PLAYER_SIZE, PLAYER_SIZE])
-        self.image.fill(PLAYER_COLOR)
-        self.rect = self.image.get_rect()
-        self.rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
+    return all_sprites, enemies, bullets, experience_orbs, player
 
-        # Base Stats
-        self.speed = 5
-        self.max_health = 100
-        self.health = self.max_health
-        self.shoot_delay = 250
-
-        # Leveling
-        self.experience = 0
-        self.level = 1
-
-        self.last_shot = pygame.time.get_ticks()
-
-    def update(self):
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_LEFT]:
-            self.rect.x -= self.speed
-        if keys[pygame.K_RIGHT]:
-            self.rect.x += self.speed
-        if keys[pygame.K_UP]:
-            self.rect.y -= self.speed
-        if keys[pygame.K_DOWN]:
-            self.rect.y += self.speed
-
-        self.shoot()
-
-    def shoot(self):
-        now = pygame.time.get_ticks()
-        if now - self.last_shot > self.shoot_delay:
-            self.last_shot = now
-            bullet = Bullet(self.rect.centerx, self.rect.top)
-            all_sprites.add(bullet)
-            bullets.add(bullet)
-
-    def gain_experience(self, amount):
-        self.experience += amount
-        while self.experience >= self.level * 100:
-            xp_needed = self.level * 100
-            self.experience -= xp_needed
-            self.level_up()
-
-    def level_up(self):
-        self.level += 1
-        upgrade = random.choice(list(UPGRADES.keys()))
-        UPGRADES[upgrade](self)
-        print(f"Player leveled up to level {self.level}! Upgraded {upgrade}.")
-
-# --- Bullet Class ---
-class Bullet(pygame.sprite.Sprite):
-    def __init__(self, x, y):
-        super().__init__()
-        self.image = pygame.Surface([10, 10])
-        self.image.fill((255, 255, 0)) # Yellow
-        self.rect = self.image.get_rect()
-        self.rect.center = (x, y)
-        self.speed = 10
-
-    def update(self):
-        self.rect.y -= self.speed
-        if self.rect.bottom < 0:
-            self.kill()
-
-# --- ExperienceOrb Class ---
-class ExperienceOrb(pygame.sprite.Sprite):
-    def __init__(self, x, y):
-        super().__init__()
-        self.image = pygame.Surface([15, 15])
-        self.image.fill((0, 255, 0)) # Green
-        self.rect = self.image.get_rect()
-        self.rect.center = (x, y)
-
-# --- Enemy Class ---
-class Enemy(pygame.sprite.Sprite):
-    def __init__(self, player):
-        super().__init__()
-        self.image = pygame.Surface([30, 30])
-        self.image.fill((255, 0, 0))  # Red
-        self.rect = self.image.get_rect()
-        self.player = player
-
-        # Spawn at a random location off-screen
-        side = random.randint(1, 4)
-        if side == 1: # Top
-            self.rect.x = random.randint(-50, SCREEN_WIDTH + 50)
-            self.rect.y = random.randint(-50, 0)
-        elif side == 2: # Bottom
-            self.rect.x = random.randint(-50, SCREEN_WIDTH + 50)
-            self.rect.y = random.randint(SCREEN_HEIGHT, SCREEN_HEIGHT + 50)
-        elif side == 3: # Left
-            self.rect.x = random.randint(-50, 0)
-            self.rect.y = random.randint(-50, SCREEN_HEIGHT + 50)
-        else: # Right
-            self.rect.x = random.randint(SCREEN_WIDTH, SCREEN_WIDTH + 50)
-            self.rect.y = random.randint(-50, SCREEN_HEIGHT + 50)
-
-        self.speed = 2
-
-    def update(self):
-        # Move towards the player
-        dx = self.player.rect.x - self.rect.x
-        dy = self.player.rect.y - self.rect.y
-        dist = (dx**2 + dy**2)**0.5
-        if dist != 0:
-            self.rect.x += self.speed * dx / dist
-            self.rect.y += self.speed * dy / dist
-
-# --- Game Setup ---
-pygame.init()
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Multiplayer Survivor Game")
-
-all_sprites = pygame.sprite.Group()
-player = Player()
-all_sprites.add(player)
-
-enemies = pygame.sprite.Group()
-bullets = pygame.sprite.Group()
-experience_orbs = pygame.sprite.Group()
-
-clock = pygame.time.Clock()
-game_time = 0
-
-WAVE_EVENT = pygame.USEREVENT + 1
-pygame.time.set_timer(WAVE_EVENT, 5000) # 5 seconds
-
-wave_number = 1
-
-# --- Game Loop ---
 def main():
-    global wave_number, game_time
-    running = True
-    last_time = pygame.time.get_ticks()
-    while running:
-        now = pygame.time.get_ticks()
-        dt = (now - last_time) / 1000.0
-        last_time = now
-        game_time += dt
-        if game_time >= 1200: # 20 minutes
-            running = False
+    pygame.init()
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    pygame.display.set_caption("Multiplayer Survivor Game")
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            if event.type == WAVE_EVENT:
-                for _ in range(wave_number * 2): # Increase enemies each wave
-                    enemy = Enemy(player)
-                    all_sprites.add(enemy)
-                    enemies.add(enemy)
-                wave_number += 1
+    clock = pygame.time.Clock()
 
-        # --- Update ---
-        all_sprites.update()
+    while True:
+        all_sprites, enemies, bullets, experience_orbs, player = reset_game()
+        game_time = 0
 
-        # --- Collision Detection ---
-        # Player <> Enemies
-        hits = pygame.sprite.spritecollide(player, enemies, True)
-        for hit in hits:
-            player.health -= 10
-            print(f"Player health: {player.health}")
-            if player.health <= 0:
-                running = False
+        WAVE_EVENT = pygame.USEREVENT + 1
+        pygame.time.set_timer(WAVE_EVENT, 5000)
+        wave_number = 1
 
-        # Bullets <> Enemies
-        hits = pygame.sprite.groupcollide(enemies, bullets, True, True)
-        for hit in hits:
-            orb = ExperienceOrb(hit.rect.centerx, hit.rect.centery)
-            all_sprites.add(orb)
-            experience_orbs.add(orb)
+        running = True
+        current_state = GameState.START_MENU
+        boss_spawned = False
+        last_time = pygame.time.get_ticks()
 
-        # Player <> Experience Orbs
-        hits = pygame.sprite.spritecollide(player, experience_orbs, True)
-        for hit in hits:
-            player.gain_experience(25)
+        while running:
+            now = pygame.time.get_ticks()
+            dt = (now - last_time) / 1000.0
+            last_time = now
 
-        # --- Draw ---
-        screen.fill((0, 0, 0))  # Black background
-        all_sprites.draw(screen)
-        pygame.display.flip()
+            if current_state == GameState.GAMEPLAY:
+                game_time += dt
 
-        clock.tick(60)
+            if current_state == GameState.START_MENU:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        return
+                    if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                        current_state = GameState.GAMEPLAY
 
-    pygame.quit()
+                screen.fill((0, 0, 0))
+                font = pygame.font.Font(None, 72)
+                text = font.render("Press Enter to Start", True, (255, 255, 255))
+                text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+                screen.blit(text, text_rect)
+                pygame.display.flip()
+
+            elif current_state == GameState.GAMEPLAY:
+                if game_time >= 1200 and not boss_spawned: # 20 minutes
+                    pygame.time.set_timer(WAVE_EVENT, 0) # Stop waves
+                    boss = Boss(player)
+                    all_sprites.add(boss)
+                    enemies.add(boss)
+                    boss_spawned = True
+
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        return
+                    if event.type == WAVE_EVENT and not boss_spawned:
+                        for _ in range(wave_number * 2):
+                            enemy = Enemy(player)
+                            all_sprites.add(enemy)
+                            enemies.add(enemy)
+                        wave_number += 1
+
+                all_sprites.update()
+
+                hits = pygame.sprite.spritecollide(player, enemies, False)
+                for hit in hits:
+                    player.health -= 10
+                    if player.health <= 0:
+                        current_state = GameState.GAME_OVER
+                    if not isinstance(hit, Boss):
+                        hit.kill()
+
+                hits = pygame.sprite.groupcollide(enemies, bullets, False, True)
+                for hit in hits:
+                    if isinstance(hit, Boss):
+                        hit.health -= 10
+                        if hit.health <= 0:
+                            hit.kill()
+                            running = False
+                    else:
+                        hit.kill()
+                        orb = ExperienceOrb(hit.rect.centerx, hit.rect.centery)
+                        all_sprites.add(orb)
+                        experience_orbs.add(orb)
+
+                hits = pygame.sprite.spritecollide(player, experience_orbs, True)
+                for hit in hits:
+                    player.gain_experience(25)
+
+                screen.fill((0, 0, 0))
+                all_sprites.draw(screen)
+                draw_ui(screen, player, game_time)
+                pygame.display.flip()
+
+            elif current_state == GameState.GAME_OVER:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        return
+                    if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                        running = False
+
+                screen.fill((0, 0, 0))
+                font = pygame.font.Font(None, 72)
+                text = font.render("Game Over", True, (255, 255, 255))
+                text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+                screen.blit(text, text_rect)
+
+                font = pygame.font.Font(None, 36)
+                text = font.render("Press Enter to Restart", True, (255, 255, 255))
+                text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50))
+                screen.blit(text, text_rect)
+                pygame.display.flip()
+
+            clock.tick(60)
 
 if __name__ == "__main__":
     main()
