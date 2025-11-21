@@ -3,7 +3,25 @@ import random
 from game.src.constants import SCREEN_WIDTH, SCREEN_HEIGHT
 
 class Enemy(pygame.sprite.Sprite):
+    """
+    Represents a standard enemy that chases the player.
+
+    Attributes:
+        image (pygame.Surface): The visual representation of the enemy.
+        rect (pygame.Rect): The bounding rectangle of the enemy.
+        player (Player): The player instance this enemy targets.
+        speed (int): The movement speed of the enemy.
+    """
+
     def __init__(self, player):
+        """
+        Initializes the enemy.
+
+        Spawns the enemy at a random location just outside the screen boundaries.
+
+        Args:
+            player (Player): The player instance to chase.
+        """
         super().__init__()
         self.image = pygame.Surface([30, 30])
         self.image.fill((255, 0, 0))  # Red
@@ -28,6 +46,11 @@ class Enemy(pygame.sprite.Sprite):
         self.speed = 2
 
     def update(self):
+        """
+        Updates the enemy's position.
+
+        Moves the enemy directly towards the player's current position.
+        """
         # Move towards the player
         dx = self.player.rect.x - self.rect.x
         dy = self.player.rect.y - self.rect.y

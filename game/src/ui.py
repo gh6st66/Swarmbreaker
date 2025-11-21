@@ -1,6 +1,16 @@
 import pygame
 
 def draw_ui(screen, player, game_time):
+    """
+    Draws the user interface elements (HUD) onto the screen.
+
+    Displays health, experience, level, and game time.
+
+    Args:
+        screen (pygame.Surface): The main game screen surface.
+        player (Player): The player instance to read stats from.
+        game_time (float): The current game time in seconds.
+    """
     font = pygame.font.Font(None, 36)
 
     # Health

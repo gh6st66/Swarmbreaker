@@ -5,7 +5,7 @@ Guidelines for AI agents and automated tools working in this repository.
 ## Scope & Layout
 
 - This file applies to the entire repository.
-- High-level game and engine design lives under `docs/` (e.g. `docs/Swarmbreaker_master_spec.md`, `docs/Game_Overview.md`, `docs/Swarmbreaker_progression.md`).
+- High-level game and engine design lives under `Swarmbreaker/` (e.g. `Swarmbreaker/Swarmbreaker_master_spec.md`, `Swarmbreaker/Game_Overview.md`, `Swarmbreaker/Swarmbreaker_progression.md`).
 - The current playable prototype lives under `game/` (Pygame-based).
 - Tests for the prototype live under `game/tests/`.
 
@@ -18,7 +18,7 @@ Guidelines for AI agents and automated tools working in this repository.
 
 ## Documentation
 
-- Treat the specs in `docs/` as the conceptual source of truth for systems (tick loop, progression, entities).
+- Treat the specs in `Swarmbreaker/` as the conceptual source of truth for systems (tick loop, progression, entities).
 - If code changes materially diverge from these specs, either:
   - Align the code with the spec, or
   - Clearly update the relevant doc section to match the new reality.
@@ -57,4 +57,3 @@ Guidelines for AI agents and automated tools working in this repository.
   - Content/data,
   - Orchestration/CLI entry points.
 - Follow the patterns described in the docs if adding TS/Node tools or similar (data-driven, spec-aligned, deterministic where practical).
-
