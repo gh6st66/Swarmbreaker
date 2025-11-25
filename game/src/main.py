@@ -1,12 +1,24 @@
+"""
+Main entry point for the game.
+
+This script initializes the game, defines the main game loop, and handles
+all game events, updates, and rendering. It also contains inline class definitions
+for game entities used within this specific script execution.
+"""
+
 import pygame
 import random
 from game.src.maps.cursed_grove import CursedGroveMap
 
 # --- Constants ---
 SCREEN_WIDTH = 800
+"""int: The width of the game screen."""
 SCREEN_HEIGHT = 600
+"""int: The height of the game screen."""
 PLAYER_SIZE = 50
+"""int: The size of the player sprite."""
 PLAYER_COLOR = (0, 128, 255)  # Blue
+"""tuple: The color of the player sprite."""
 
 # --- Upgrade Definitions ---
 UPGRADES = {
@@ -14,10 +26,26 @@ UPGRADES = {
     "speed": lambda p: setattr(p, 'speed', p.speed + 1),
     "firerate": lambda p: setattr(p, 'shoot_delay', max(50, p.shoot_delay - 25))
 }
+"""dict: A dictionary of upgrade functions applicable to the player."""
 
 # --- Player Class ---
 class Player(pygame.sprite.Sprite):
+    """
+    Represents the player character (inline definition).
+
+    Attributes:
+        image (pygame.Surface): The visual representation of the player.
+        rect (pygame.Rect): The bounding rectangle of the player.
+        speed (int): Movement speed.
+        max_health (int): Maximum health.
+        health (float): Current health.
+        shoot_delay (int): Cooldown between shots.
+        experience (int): Current XP.
+        level (int): Current level.
+        last_shot (int): Timestamp of the last shot.
+    """
     def __init__(self):
+        """Initializes the player."""
         super().__init__()
         self.image = pygame.Surface([PLAYER_SIZE, PLAYER_SIZE])
         self.image.fill(PLAYER_COLOR)
@@ -37,6 +65,12 @@ class Player(pygame.sprite.Sprite):
         self.last_shot = pygame.time.get_ticks()
 
     def update(self, obstacles):
+        """
+        Updates the player position and handles input.
+
+        Args:
+            obstacles (pygame.sprite.Group): Group of obstacles to check collision against.
+        """
         original_pos = self.rect.copy()
 
         keys = pygame.key.get_pressed()
@@ -56,6 +90,7 @@ class Player(pygame.sprite.Sprite):
         self.shoot()
 
     def shoot(self):
+        """Fires a bullet if cooldown allows."""
         now = pygame.time.get_ticks()
         if now - self.last_shot > self.shoot_delay:
             self.last_shot = now
@@ -64,6 +99,12 @@ class Player(pygame.sprite.Sprite):
             bullets.add(bullet)
 
     def gain_experience(self, amount):
+        """
+        Adds experience and checks for level up.
+
+        Args:
+            amount (int): Amount of XP to gain.
+        """
         self.experience += amount
         while self.experience >= self.level * 100:
             xp_needed = self.level * 100
@@ -71,6 +112,7 @@ class Player(pygame.sprite.Sprite):
             self.level_up()
 
     def level_up(self):
+        """Increases level and applies a random upgrade."""
         self.level += 1
         upgrade = random.choice(list(UPGRADES.keys()))
         UPGRADES[upgrade](self)
@@ -78,7 +120,22 @@ class Player(pygame.sprite.Sprite):
 
 # --- Bullet Class ---
 class Bullet(pygame.sprite.Sprite):
+    """
+    Represents a bullet fired by the player (inline definition).
+
+    Attributes:
+        image (pygame.Surface): The visual representation.
+        rect (pygame.Rect): The bounding rectangle.
+        speed (int): Vertical speed.
+    """
     def __init__(self, x, y):
+        """
+        Initializes the bullet.
+
+        Args:
+            x (int): X-coordinate.
+            y (int): Y-coordinate.
+        """
         super().__init__()
         self.image = pygame.Surface([10, 10])
         self.image.fill((255, 255, 0)) # Yellow
@@ -87,13 +144,28 @@ class Bullet(pygame.sprite.Sprite):
         self.speed = 10
 
     def update(self, *args, **kwargs):
+        """Updates bullet position."""
         self.rect.y -= self.speed
         if self.rect.bottom < 0:
             self.kill()
 
 # --- ExperienceOrb Class ---
 class ExperienceOrb(pygame.sprite.Sprite):
+    """
+    Represents an experience orb (inline definition).
+
+    Attributes:
+        image (pygame.Surface): Visual representation.
+        rect (pygame.Rect): Bounding rectangle.
+    """
     def __init__(self, x, y):
+        """
+        Initializes the orb.
+
+        Args:
+            x (int): X-coordinate.
+            y (int): Y-coordinate.
+        """
         super().__init__()
         self.image = pygame.Surface([15, 15])
         self.image.fill((0, 255, 0)) # Green
@@ -101,11 +173,29 @@ class ExperienceOrb(pygame.sprite.Sprite):
         self.rect.center = (x, y)
 
     def update(self, *args, **kwargs):
+        """Updates the orb (no-op)."""
         pass
 
 # --- Enemy Class ---
 class Enemy(pygame.sprite.Sprite):
+    """
+    Represents an enemy entity (inline definition).
+
+    Attributes:
+        image (pygame.Surface): Visual representation.
+        rect (pygame.Rect): Bounding rectangle.
+        player (Player): Reference to the player.
+        game_map (Map): Reference to the game map.
+        speed (int): Movement speed.
+    """
     def __init__(self, player, game_map):
+        """
+        Initializes the enemy.
+
+        Args:
+            player (Player): The player target.
+            game_map (Map): The map to spawn from.
+        """
         super().__init__()
         self.image = pygame.Surface([30, 30])
         self.image.fill((255, 0, 0))  # Red
@@ -119,6 +209,12 @@ class Enemy(pygame.sprite.Sprite):
         self.speed = 2
 
     def update(self, obstacles):
+        """
+        Updates enemy position towards player.
+
+        Args:
+            obstacles (pygame.sprite.Group): Obstacles to collide with.
+        """
         original_pos = self.rect.copy()
 
         # Move towards the player
@@ -155,6 +251,11 @@ pygame.time.set_timer(WAVE_EVENT, 5000) # 5 seconds
 wave_number = 1
 # --- Game Loop ---
 def main():
+    """
+    The main game loop function.
+
+    Handles initialization, the game loop, event processing, updates, collision detection, and drawing.
+    """
     global wave_number, game_time, arena_rect
     running = True
     last_time = pygame.time.get_ticks()
@@ -184,7 +285,8 @@ def main():
                 wave_number += 1
 
         # --- Update ---
-        all_sprites.update()
+        all_sprites.update(game_map.obstacle_sprites)
+
         # --- Collision Detection ---
         # Arena Damage
         if not arena_rect.contains(player.rect):
